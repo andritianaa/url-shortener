@@ -1,6 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { nanoid } from "nanoid"
-import { prisma } from "@/lib/prisma"
+import { nanoid } from 'nanoid';
+import { NextRequest, NextResponse } from 'next/server';
+
+import { prisma } from '@/lib/prisma';
 
 const FILE_SERVER_URL = process.env.FILE_SERVER_URL || "http://localhost:3000"
 const API_KEY = process.env.FILE_SERVER_API_KEY || "votre-api-key-secret"
@@ -21,10 +22,11 @@ export async function POST(request: NextRequest) {
     // Open Graph fields
     const ogTitle = formData.get("ogTitle") as string
     const ogDescription = formData.get("ogDescription") as string
-    const ogImage = formData.get("ogImage") as string
+    const ogImageFile = formData.get("ogImageFile") as File
 
     let fileInfo = null
     let finalUrl = url
+    let ogImageUrl = null
 
     // Upload du fichier si présent
     if (file) {
@@ -54,6 +56,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Upload de l'image Open Graph si présente
+    if (ogImageFile) {
+      const ogImageFormData = new FormData()
+      ogImageFormData.append("file", ogImageFile)
+
+      const ogImageResponse = await fetch(`${FILE_SERVER_URL}/upload`, {
+        method: "POST",
+        headers: {
+          "X-API-Key": API_KEY,
+        },
+        body: ogImageFormData,
+      })
+
+      if (ogImageResponse.ok) {
+        const ogImageResult = await ogImageResponse.json()
+        ogImageUrl = ogImageResult.data.url
+      }
+    }
+
     // Générer le code court
     const shortCode = customAlias || nanoid(8)
 
@@ -78,7 +99,7 @@ export async function POST(request: NextRequest) {
         maxClicks: maxClicks ? Number.parseInt(maxClicks) : null,
         ogTitle,
         ogDescription,
-        ogImage,
+        ogImage: ogImageUrl,
         userId: userId || null,
         ...(fileInfo && {
           file: {

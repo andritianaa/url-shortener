@@ -1,38 +1,42 @@
-import { redirect, notFound } from "next/navigation"
-import { RedirectPage } from "@/components/redirect-page"
-import { OpenGraphPreview } from "@/components/open-graph-preview"
-import { prisma } from "@/lib/prisma"
-import { getLocationFromIP } from "@/lib/utils/ip"
-import { parseUserAgent } from "@/lib/utils/user-agent"
-import type { Metadata } from "next"
-import { headers } from "next/headers"
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 
+import { OpenGraphPreview } from "@/components/open-graph-preview";
+import { RedirectPage } from "@/components/redirect-page";
+import { prisma } from "@/lib/prisma";
+import { getLocationFromIP } from "@/lib/utils/ip";
+import { parseUserAgent } from "@/lib/utils/user-agent";
+
+import type { Metadata } from "next";
 interface PageProps {
   params: {
-    shortCode: string
-  }
+    shortCode: string;
+  };
   searchParams: {
-    password?: string
-    preview?: string
-  }
+    password?: string;
+    preview?: string;
+  };
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { shortCode } = params
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { shortCode } = params;
 
   const link = await prisma.link.findUnique({
     where: { shortCode },
-  })
+  });
 
   if (!link) {
     return {
       title: "Lien raccourci",
       description: "Redirection vers le lien original",
-    }
+    };
   }
 
-  const title = link.ogTitle || link.description || "Lien raccourci"
-  const description = link.ogDescription || "Redirection vers le lien original"
+  const title = link.ogTitle || link.description || "Lien raccourci";
+  const description = link.ogDescription || "Redirection vers le lien original";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
 
   return {
     title,
@@ -41,7 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title,
       description,
       images: link.ogImage ? [{ url: link.ogImage }] : [],
-      url: `${process.env.NEXT_PUBLIC_BASE_URL}/${shortCode}`,
+      url: `${baseUrl}/${shortCode}`,
     },
     twitter: {
       card: "summary_large_image",
@@ -49,21 +53,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       images: link.ogImage ? [link.ogImage] : [],
     },
-  }
+  };
 }
 
-export default async function ShortLinkPage({ params, searchParams }: PageProps) {
-  const { shortCode } = params
-  const { password, preview } = searchParams
+export default async function ShortLinkPage({
+  params,
+  searchParams,
+}: PageProps) {
+  const { shortCode } = params;
+  const { password, preview } = searchParams;
 
   // Trouver le lien
   const link = await prisma.link.findUnique({
     where: { shortCode },
     include: { file: true },
-  })
+  });
 
   if (!link) {
-    notFound()
+    notFound();
   }
 
   // Si c'est une prévisualisation, afficher l'aperçu Open Graph
@@ -74,11 +81,11 @@ export default async function ShortLinkPage({ params, searchParams }: PageProps)
           id: link.id,
           shortCode: link.shortCode,
           originalUrl: link.originalUrl,
-          description: link.description,
+          description: link.description ?? undefined,
           openGraph: {
-            title: link.ogTitle,
-            description: link.ogDescription,
-            image: link.ogImage,
+            title: link.ogTitle ?? undefined,
+            description: link.ogDescription ?? undefined,
+            image: link.ogImage ?? undefined,
           },
           clicks: await prisma.click.count({ where: { linkId: link.id } }),
           hasPassword: !!link.password,
@@ -86,12 +93,12 @@ export default async function ShortLinkPage({ params, searchParams }: PageProps)
           createdAt: link.createdAt.toISOString(),
         }}
       />
-    )
+    );
   }
 
   // Vérifier si le lien est actif
   if (!link.isActive) {
-    return <RedirectPage error="Ce lien a expiré" />
+    return <RedirectPage error="Ce lien a expiré" />;
   }
 
   // Vérifier la date d'expiration
@@ -99,19 +106,19 @@ export default async function ShortLinkPage({ params, searchParams }: PageProps)
     await prisma.link.update({
       where: { id: link.id },
       data: { isActive: false },
-    })
-    return <RedirectPage error="Ce lien a expiré" />
+    });
+    return <RedirectPage error="Ce lien a expiré" />;
   }
 
   // Vérifier le nombre maximum de clics
   if (link.maxClicks) {
-    const clickCount = await prisma.click.count({ where: { linkId: link.id } })
+    const clickCount = await prisma.click.count({ where: { linkId: link.id } });
     if (clickCount >= link.maxClicks) {
       await prisma.link.update({
         where: { id: link.id },
         data: { isActive: false },
-      })
-      return <RedirectPage error="Ce lien a atteint sa limite de clics" />
+      });
+      return <RedirectPage error="Ce lien a atteint sa limite de clics" />;
     }
   }
 
@@ -121,24 +128,24 @@ export default async function ShortLinkPage({ params, searchParams }: PageProps)
       <RedirectPage
         link={{
           shortCode: link.shortCode,
-          description: link.description,
+          description: link.description ?? undefined,
           originalUrl: link.originalUrl,
         }}
         requirePassword
       />
-    )
+    );
   }
 
   // Enregistrer les statistiques de clic
   try {
-    const headersList = await headers()
-    const userAgent = headersList.get("user-agent") || ""
-    const referer = headersList.get("referer")
+    const headersList = await headers();
+    const userAgent = headersList.get("user-agent") || "";
+    const referer = headersList.get("referer");
 
     // Simuler l'IP (dans un vrai déploiement, utiliser la vraie IP)
-    const ipAddress = "127.0.0.1" // getClientIP(request)
-    const location = await getLocationFromIP(ipAddress)
-    const deviceInfo = parseUserAgent(userAgent)
+    const ipAddress = "127.0.0.1"; // getClientIP(request)
+    const location = await getLocationFromIP(ipAddress);
+    const deviceInfo = parseUserAgent(userAgent);
 
     await prisma.click.create({
       data: {
@@ -152,17 +159,17 @@ export default async function ShortLinkPage({ params, searchParams }: PageProps)
         browser: deviceInfo.browser,
         os: deviceInfo.os,
       },
-    })
+    });
   } catch (error) {
-    console.error("Error recording click:", error)
+    console.error("Error recording click:", error);
   }
 
   // Rediriger vers l'URL cible
   if (link.originalUrl.startsWith("/download/")) {
     // Redirection vers la page de téléchargement
-    redirect(link.originalUrl)
+    redirect(link.originalUrl);
   } else {
     // Redirection externe
-    redirect(link.originalUrl)
+    redirect(link.originalUrl);
   }
 }

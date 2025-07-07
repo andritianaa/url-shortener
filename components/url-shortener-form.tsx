@@ -1,136 +1,189 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Switch } from "@/components/ui/switch"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { useToast } from "@/hooks/use-toast"
-import { CalendarIcon, Upload, LinkIcon, Copy, ExternalLink, ChevronDown, Share2 } from "lucide-react"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
-import { cn } from "@/lib/utils"
-import { QRCodeSVG } from "qrcode.react"
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import {
+  CalendarIcon,
+  ChevronDown,
+  Copy,
+  ExternalLink,
+  ImageIcon,
+  LinkIcon,
+  Share2,
+  Upload,
+} from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface ShortenedUrl {
-  shortUrl: string
-  originalUrl: string
-  shortCode: string
-  qrCode?: string
-  clicks: number
-  createdAt: string
+  shortUrl: string;
+  originalUrl: string;
+  shortCode: string;
+  qrCode?: string;
+  clicks: number;
+  createdAt: string;
 }
 
 export function UrlShortenerForm() {
-  const [url, setUrl] = useState("")
-  const [customAlias, setCustomAlias] = useState("")
-  const [password, setPassword] = useState("")
-  const [description, setDescription] = useState("")
-  const [expirationDate, setExpirationDate] = useState<Date>()
-  const [maxClicks, setMaxClicks] = useState("")
-  const [file, setFile] = useState<File | null>(null)
+  const [url, setUrl] = useState("");
+  const [customAlias, setCustomAlias] = useState("");
+  const [password, setPassword] = useState("");
+  const [description, setDescription] = useState("");
+  const [expirationDate, setExpirationDate] = useState<Date>();
+  const [maxClicks, setMaxClicks] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
   // Open Graph fields
-  const [ogTitle, setOgTitle] = useState("")
-  const [ogDescription, setOgDescription] = useState("")
-  const [ogImage, setOgImage] = useState("")
-  const [showOpenGraph, setShowOpenGraph] = useState(false)
+  const [ogTitle, setOgTitle] = useState("");
+  const [ogDescription, setOgDescription] = useState("");
+  const [ogImageFile, setOgImageFile] = useState<File | null>(null);
+  const [ogImagePreview, setOgImagePreview] = useState<string>("");
+  const [showOpenGraph, setShowOpenGraph] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [result, setResult] = useState<ShortenedUrl | null>(null)
-  const [usePassword, setUsePassword] = useState(false)
-  const [useExpiration, setUseExpiration] = useState(false)
-  const [useMaxClicks, setUseMaxClicks] = useState(false)
-  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false);
+  const [result, setResult] = useState<ShortenedUrl | null>(null);
+  const [usePassword, setUsePassword] = useState(false);
+  const [useExpiration, setUseExpiration] = useState(false);
+  const [useMaxClicks, setUseMaxClicks] = useState(false);
+  const { toast } = useToast();
+
+  const handleOgImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        // 5MB limit
+        toast({
+          title: "Erreur",
+          description: "L'image ne doit pas dépasser 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!selectedFile.type.startsWith("image/")) {
+        toast({
+          title: "Erreur",
+          description: "Veuillez sélectionner un fichier image",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setOgImageFile(selectedFile);
+
+      // Créer un aperçu
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setOgImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(selectedFile);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!url && !file) {
       toast({
         title: "Erreur",
         description: "Veuillez saisir une URL ou sélectionner un fichier",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const formData = new FormData()
-      if (url) formData.append("url", url)
-      if (customAlias) formData.append("customAlias", customAlias)
-      if (usePassword && password) formData.append("password", password)
-      if (description) formData.append("description", description)
+      const formData = new FormData();
+      if (url) formData.append("url", url);
+      if (customAlias) formData.append("customAlias", customAlias);
+      if (usePassword && password) formData.append("password", password);
+      if (description) formData.append("description", description);
       if (useExpiration && expirationDate) {
-        formData.append("expirationDate", expirationDate.toISOString())
+        formData.append("expirationDate", expirationDate.toISOString());
       }
-      if (useMaxClicks && maxClicks) formData.append("maxClicks", maxClicks)
-      if (file) formData.append("file", file)
+      if (useMaxClicks && maxClicks) formData.append("maxClicks", maxClicks);
+      if (file) formData.append("file", file);
 
       // Open Graph data
-      if (ogTitle) formData.append("ogTitle", ogTitle)
-      if (ogDescription) formData.append("ogDescription", ogDescription)
-      if (ogImage) formData.append("ogImage", ogImage)
+      if (ogTitle) formData.append("ogTitle", ogTitle);
+      if (ogDescription) formData.append("ogDescription", ogDescription);
+      if (ogImageFile) formData.append("ogImageFile", ogImageFile);
 
       const response = await fetch("/api/shorten", {
         method: "POST",
         body: formData,
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Erreur lors de la création du lien")
+        throw new Error("Erreur lors de la création du lien");
       }
 
-      const data = await response.json()
-      setResult(data)
+      const data = await response.json();
+      setResult(data);
 
       // Reset form
-      setUrl("")
-      setCustomAlias("")
-      setPassword("")
-      setDescription("")
-      setExpirationDate(undefined)
-      setMaxClicks("")
-      setFile(null)
-      setOgTitle("")
-      setOgDescription("")
-      setOgImage("")
-      setUsePassword(false)
-      setUseExpiration(false)
-      setUseMaxClicks(false)
-      setShowOpenGraph(false)
+      setUrl("");
+      setCustomAlias("");
+      setPassword("");
+      setDescription("");
+      setExpirationDate(undefined);
+      setMaxClicks("");
+      setFile(null);
+      setOgTitle("");
+      setOgDescription("");
+      setOgImageFile(null);
+      setOgImagePreview("");
+      setUsePassword(false);
+      setUseExpiration(false);
+      setUseMaxClicks(false);
+      setShowOpenGraph(false);
 
       toast({
         title: "Succès",
         description: "Lien raccourci créé avec succès !",
-      })
+      });
     } catch (error) {
       toast({
         title: "Erreur",
         description: "Impossible de créer le lien raccourci",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
+    navigator.clipboard.writeText(text);
     toast({
       title: "Copié",
       description: "Lien copié dans le presse-papiers",
-    })
-  }
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -177,7 +230,8 @@ export function UrlShortenerForm() {
                   </div>
                   {file && (
                     <p className="text-sm text-muted-foreground">
-                      Fichier sélectionné: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                      Fichier sélectionné: {file.name} (
+                      {(file.size / 1024 / 1024).toFixed(2)} MB)
                     </p>
                   )}
                 </div>
@@ -208,12 +262,23 @@ export function UrlShortenerForm() {
               {/* Open Graph Section */}
               <Collapsible open={showOpenGraph} onOpenChange={setShowOpenGraph}>
                 <CollapsibleTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between bg-transparent" type="button">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between bg-transparent"
+                    type="button"
+                  >
                     <div className="flex items-center space-x-2">
                       <Share2 className="h-4 w-4" />
-                      <span>Personnaliser l'aperçu de partage (Open Graph)</span>
+                      <span>
+                        Personnaliser l'aperçu de partage (Open Graph)
+                      </span>
                     </div>
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", showOpenGraph && "rotate-180")} />
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform",
+                        showOpenGraph && "rotate-180"
+                      )}
+                    />
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-4 mt-4">
@@ -229,7 +294,9 @@ export function UrlShortenerForm() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="og-description">Description de l'aperçu</Label>
+                      <Label htmlFor="og-description">
+                        Description de l'aperçu
+                      </Label>
                       <Textarea
                         id="og-description"
                         placeholder="Description qui apparaîtra lors du partage"
@@ -240,43 +307,59 @@ export function UrlShortenerForm() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="og-image">URL de l'image d'aperçu</Label>
-                      <Input
-                        id="og-image"
-                        type="url"
-                        placeholder="https://example.com/image.jpg"
-                        value={ogImage}
-                        onChange={(e) => setOgImage(e.target.value)}
-                      />
+                      <Label htmlFor="og-image">Image d'aperçu</Label>
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          id="og-image"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleOgImageChange}
+                          className="text-base"
+                        />
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        Image qui apparaîtra lors du partage sur les réseaux sociaux
+                        Image qui apparaîtra lors du partage sur les réseaux
+                        sociaux (max 5MB)
                       </p>
+
+                      {ogImagePreview && (
+                        <div className="mt-2">
+                          <img
+                            src={ogImagePreview || "/placeholder.svg"}
+                            alt="Aperçu de l'image OG"
+                            className="w-32 h-20 object-cover rounded border"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* Aperçu Open Graph */}
-                    {(ogTitle || ogDescription || ogImage) && (
+                    {(ogTitle || ogDescription || ogImagePreview) && (
                       <div className="space-y-2">
                         <Label>Aperçu du partage</Label>
                         <div className="border rounded-lg p-3 bg-background">
-                          {ogImage && (
+                          {ogImagePreview && (
                             <div className="mb-3">
                               <img
-                                src={ogImage || "/placeholder.svg"}
+                                src={ogImagePreview || "/placeholder.svg"}
                                 alt="Aperçu"
                                 className="w-full h-32 object-cover rounded"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none"
-                                }}
                               />
                             </div>
                           )}
                           <div className="space-y-1">
-                            <h4 className="font-medium text-sm">{ogTitle || "Titre de votre lien"}</h4>
+                            <h4 className="font-medium text-sm">
+                              {ogTitle || "Titre de votre lien"}
+                            </h4>
                             <p className="text-xs text-muted-foreground">
                               {ogDescription || "Description de votre lien"}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {window.location.origin}/{customAlias || "abc123"}
+                              {typeof window !== "undefined"
+                                ? window.location.origin
+                                : "https://example.com"}
+                              /{customAlias || "abc123"}
                             </p>
                           </div>
                         </div>
@@ -291,8 +374,14 @@ export function UrlShortenerForm() {
                 <h3 className="font-medium">Options avancées</h3>
 
                 <div className="flex items-center space-x-2">
-                  <Switch id="use-password" checked={usePassword} onCheckedChange={setUsePassword} />
-                  <Label htmlFor="use-password">Protection par mot de passe</Label>
+                  <Switch
+                    id="use-password"
+                    checked={usePassword}
+                    onCheckedChange={setUsePassword}
+                  />
+                  <Label htmlFor="use-password">
+                    Protection par mot de passe
+                  </Label>
                 </div>
 
                 {usePassword && (
@@ -309,7 +398,11 @@ export function UrlShortenerForm() {
                 )}
 
                 <div className="flex items-center space-x-2">
-                  <Switch id="use-expiration" checked={useExpiration} onCheckedChange={setUseExpiration} />
+                  <Switch
+                    id="use-expiration"
+                    checked={useExpiration}
+                    onCheckedChange={setUseExpiration}
+                  />
                   <Label htmlFor="use-expiration">Date d'expiration</Label>
                 </div>
 
@@ -320,7 +413,7 @@ export function UrlShortenerForm() {
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !expirationDate && "text-muted-foreground",
+                          !expirationDate && "text-muted-foreground"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -344,7 +437,11 @@ export function UrlShortenerForm() {
                 )}
 
                 <div className="flex items-center space-x-2">
-                  <Switch id="use-max-clicks" checked={useMaxClicks} onCheckedChange={setUseMaxClicks} />
+                  <Switch
+                    id="use-max-clicks"
+                    checked={useMaxClicks}
+                    onCheckedChange={setUseMaxClicks}
+                  />
                   <Label htmlFor="use-max-clicks">Limite de clics</Label>
                 </div>
 
@@ -381,12 +478,24 @@ export function UrlShortenerForm() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
-              <Input value={result.shortUrl} readOnly className="flex-1 bg-transparent border-none" />
-              <Button size="sm" variant="outline" onClick={() => copyToClipboard(result.shortUrl)}>
+              <Input
+                value={result.shortUrl}
+                readOnly
+                className="flex-1 bg-transparent border-none"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => copyToClipboard(result.shortUrl)}
+              >
                 <Copy className="h-4 w-4" />
               </Button>
               <Button size="sm" variant="outline" asChild>
-                <a href={result.shortUrl} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={result.shortUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </Button>
@@ -395,13 +504,16 @@ export function UrlShortenerForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>URL originale</Label>
-                <p className="text-sm text-muted-foreground break-all">{result.originalUrl}</p>
+                <p className="text-sm text-muted-foreground break-all">
+                  {result.originalUrl}
+                </p>
               </div>
 
               <div className="space-y-2">
                 <Label>Statistiques</Label>
                 <p className="text-sm text-muted-foreground">
-                  {result.clicks} clic(s) • Créé le {format(new Date(result.createdAt), "PPP", { locale: fr })}
+                  {result.clicks} clic(s) • Créé le{" "}
+                  {format(new Date(result.createdAt), "PPP", { locale: fr })}
                 </p>
               </div>
             </div>
@@ -415,5 +527,5 @@ export function UrlShortenerForm() {
         </Card>
       )}
     </div>
-  )
+  );
 }
