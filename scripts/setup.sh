@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Configuration de l'application URL Shortener Pro"
+echo "🚀 Configuration de l'application Teratany tool"
 
 # Installer les dépendances
 echo "📦 Installation des dépendances..."
