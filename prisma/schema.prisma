@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      Role     @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  links Link[]
+  sessions Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Link {
+  id             String    @id @default(cuid())
+  shortCode      String    @unique
+  originalUrl    String
+  customAlias    String?
+  description    String?
+  password       String?
+  expirationDate DateTime?
+  maxClicks      Int?
+  isActive       Boolean   @default(true)
+  userId         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Open Graph fields
+  ogTitle       String?
+  ogDescription String?
+  ogImage       String?
+
+  // Relations
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  clicks Click[]
+  file   File?
+
+  @@map("links")
+}
+
+model Click {
+  id        String   @id @default(cuid())
+  linkId    String
+  ipAddress String?
+  userAgent String?
+  referer   String?
+  country   String?
+  city      String?
+  device    String?
+  browser   String?
+  os        String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@map("clicks")
+}
+
+model File {
+  id           String @id @default(cuid())
+  linkId       String @unique
+  filename     String
+  originalName String
+  size         Int
+  mimetype     String
+  url          String
+  createdAt    DateTime @default(now())
+
+  // Relations
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@map("files")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
