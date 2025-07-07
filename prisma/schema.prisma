@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./schema.db"
 }
 
 model User {
@@ -21,7 +21,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  links Link[]
+  links    Link[]
   sessions Session[]
 
   @@map("users")
@@ -87,8 +87,8 @@ model Click {
 }
 
 model File {
-  id           String @id @default(cuid())
-  linkId       String @unique
+  id           String   @id @default(cuid())
+  linkId       String   @unique
   filename     String
   originalName String
   size         Int
