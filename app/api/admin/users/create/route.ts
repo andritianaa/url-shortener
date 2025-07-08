@@ -1,14 +1,12 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import bcrypt from "bcryptjs"
+import bcrypt from 'bcryptjs';
+import { NextRequest, NextResponse } from 'next/server';
+
+import { requireAdmin } from '@/lib/auth-utils';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    const userRole = request.headers.get("x-user-role")
-
-    if (userRole !== "ADMIN") {
-      return NextResponse.json({ error: "Accès interdit" }, { status: 403 })
-    }
+    await requireAdmin()
 
     const { email, password, name, role } = await request.json()
 
@@ -53,8 +51,14 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(user)
-  } catch (error) {
+  } catch (error: any) {
     console.error("Create user error:", error)
+    if (error.message === "Non autorisé") {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+    }
+    if (error.message === "Accès interdit - droits administrateur requis") {
+      return NextResponse.json({ error: "Accès interdit" }, { status: 403 })
+    }
     return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })
   }
 }

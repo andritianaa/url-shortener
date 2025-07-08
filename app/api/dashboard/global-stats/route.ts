@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { requireAuth } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
     try {
-        const userId = request.headers.get("x-user-id")
-
-        if (!userId) {
-            return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-        }
+        const user = await requireAuth()
 
         const today = new Date()
         today.setHours(0, 0, 0, 0)
@@ -18,16 +15,16 @@ export async function GET(request: NextRequest) {
 
         // Statistiques de base
         const [totalLinks, activeLinks, totalClicks, clicksToday] = await Promise.all([
-            prisma.link.count({ where: { userId } }),
-            prisma.link.count({ where: { userId, isActive: true } }),
+            prisma.link.count({ where: { userId: user.id } }),
+            prisma.link.count({ where: { userId: user.id, isActive: true } }),
             prisma.click.count({
                 where: {
-                    link: { userId },
+                    link: { userId: user.id },
                 },
             }),
             prisma.click.count({
                 where: {
-                    link: { userId },
+                    link: { userId: user.id },
                     createdAt: { gte: today },
                 },
             }),
@@ -36,7 +33,7 @@ export async function GET(request: NextRequest) {
         // Clics par date (30 derniers jours)
         const clicksByDateRaw = await prisma.click.findMany({
             where: {
-                link: { userId },
+                link: { userId: user.id },
                 createdAt: { gte: thirtyDaysAgo },
             },
             select: {
@@ -67,7 +64,7 @@ export async function GET(request: NextRequest) {
 
         // Top liens
         const topLinksRaw = await prisma.link.findMany({
-            where: { userId },
+            where: { userId: user.id },
             include: {
                 _count: {
                     select: { clicks: true },
@@ -90,7 +87,7 @@ export async function GET(request: NextRequest) {
         // Statistiques par appareil
         const deviceStatsRaw = await prisma.click.findMany({
             where: {
-                link: { userId },
+                link: { userId: user.id },
             },
             select: {
                 device: true,
@@ -114,7 +111,7 @@ export async function GET(request: NextRequest) {
         // Statistiques par pays
         const countryStatsRaw = await prisma.click.findMany({
             where: {
-                link: { userId },
+                link: { userId: user.id },
             },
             select: {
                 country: true,
@@ -146,8 +143,11 @@ export async function GET(request: NextRequest) {
             deviceStats,
             countryStats,
         })
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error fetching global stats:", error)
+        if (error.message === "Non autorisé") {
+            return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+        }
         return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })
     }
 }

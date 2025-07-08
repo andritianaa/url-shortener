@@ -1,8 +1,7 @@
 "use client";
 
 import type React from "react";
-
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from "react";
 
 interface User {
   id: string;
@@ -34,14 +33,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuth = async () => {
     try {
       const response = await fetch("/api/auth/me", {
-        credentials: "include", // Important pour inclure les cookies
+        credentials: "include",
       });
+
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
+      } else {
+        // Si la réponse n'est pas ok, l'utilisateur n'est pas connecté
+        setUser(null);
       }
     } catch (error) {
       console.error("Auth check failed:", error);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -51,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await fetch("/api/auth/signin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include", // Important pour recevoir les cookies
+      credentials: "include",
       body: JSON.stringify({ email, password }),
     });
 
@@ -68,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include", // Important pour recevoir les cookies
+      credentials: "include",
       body: JSON.stringify({ email, password, name }),
     });
 

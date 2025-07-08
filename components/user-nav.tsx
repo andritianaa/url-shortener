@@ -1,7 +1,10 @@
-"use client"
+"use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { BarChart3, LogOut, Settings, Shield, User } from "lucide-react";
+import Link from "next/link";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,30 +13,28 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/hooks/use-auth"
-import { User, Settings, BarChart3, Shield, LogOut } from "lucide-react"
-import Link from "next/link"
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/use-auth";
 
 interface UserNavProps {
   user: {
-    id: string
-    email: string
-    role: "USER" | "ADMIN"
-    name?: string
-  }
+    id: string;
+    email: string;
+    role: "USER" | "ADMIN";
+    name?: string;
+  };
 }
 
 export function UserNav({ user }: UserNavProps) {
-  const { signOut } = useAuth()
+  const { signOut } = useAuth();
 
   const handleSignOut = async () => {
     try {
-      await signOut()
+      await signOut();
     } catch (error) {
-      console.error("Sign out failed:", error)
+      console.error("Sign out failed:", error);
     }
-  }
+  };
 
   return (
     <DropdownMenu>
@@ -41,7 +42,9 @@ export function UserNav({ user }: UserNavProps) {
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
             <AvatarFallback>
-              {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+              {user.name
+                ? user.name.charAt(0).toUpperCase()
+                : user.email.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -49,8 +52,12 @@ export function UserNav({ user }: UserNavProps) {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name || "Utilisateur"}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+            <p className="text-sm font-medium leading-none">
+              {user.name || "Utilisateur"}
+            </p>
+            <p className="text-xs leading-none text-muted-foreground">
+              {user.email}
+            </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -62,13 +69,13 @@ export function UserNav({ user }: UserNavProps) {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/profile">
+            <Link href="/dashboard/profile">
               <User className="mr-2 h-4 w-4" />
               <span>Profil</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/settings">
+            <Link href="/dashboard/settings">
               <Settings className="mr-2 h-4 w-4" />
               <span>Paramètres</span>
             </Link>
@@ -89,5 +96,5 @@ export function UserNav({ user }: UserNavProps) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

@@ -5,14 +5,18 @@ import type React from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
+  BarChart3,
   CalendarIcon,
   ChevronDown,
   Copy,
+  Edit,
   ExternalLink,
+  Eye,
   ImageIcon,
   LinkIcon,
   Share2,
   Upload,
+  Users,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
@@ -62,6 +66,12 @@ export function UrlShortenerForm() {
   const [ogImageFile, setOgImageFile] = useState<File | null>(null);
   const [ogImagePreview, setOgImagePreview] = useState<string>("");
   const [showOpenGraph, setShowOpenGraph] = useState(false);
+
+  // Permission fields
+  const [isPublic, setIsPublic] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canViewStats, setCanViewStats] = useState(false);
+  const [showPermissions, setShowPermissions] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ShortenedUrl | null>(null);
@@ -133,6 +143,11 @@ export function UrlShortenerForm() {
       if (ogDescription) formData.append("ogDescription", ogDescription);
       if (ogImageFile) formData.append("ogImageFile", ogImageFile);
 
+      // Permission data
+      formData.append("isPublic", isPublic.toString());
+      formData.append("canEdit", canEdit.toString());
+      formData.append("canViewStats", canViewStats.toString());
+
       const response = await fetch("/api/shorten", {
         method: "POST",
         body: formData,
@@ -157,10 +172,14 @@ export function UrlShortenerForm() {
       setOgDescription("");
       setOgImageFile(null);
       setOgImagePreview("");
+      setIsPublic(false);
+      setCanEdit(false);
+      setCanViewStats(false);
       setUsePassword(false);
       setUseExpiration(false);
       setUseMaxClicks(false);
       setShowOpenGraph(false);
+      setShowPermissions(false);
 
       toast({
         title: "Succès",
@@ -258,6 +277,117 @@ export function UrlShortenerForm() {
                   />
                 </div>
               </div>
+
+              {/* Permissions Section */}
+              <Collapsible
+                open={showPermissions}
+                onOpenChange={setShowPermissions}
+              >
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between bg-transparent"
+                    type="button"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Users className="h-4 w-4" />
+                      <span>Permissions et partage</span>
+                    </div>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform",
+                        showPermissions && "rotate-180"
+                      )}
+                    />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 mt-4">
+                  <div className="grid grid-cols-1 gap-4 p-4 border rounded-lg bg-muted/50">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center space-x-2">
+                            <Eye className="h-4 w-4" />
+                            <Label htmlFor="is-public">Lien partagé</Label>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Tous les utilisateurs peuvent voir ce lien dans
+                            "Tous les liens"
+                          </p>
+                        </div>
+                        <Switch
+                          id="is-public"
+                          checked={isPublic}
+                          onCheckedChange={setIsPublic}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center space-x-2">
+                            <Edit className="h-4 w-4" />
+                            <Label htmlFor="can-edit">
+                              Modification collaborative
+                            </Label>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Tous les utilisateurs peuvent modifier ce lien
+                          </p>
+                        </div>
+                        <Switch
+                          id="can-edit"
+                          checked={canEdit}
+                          onCheckedChange={setCanEdit}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center space-x-2">
+                            <BarChart3 className="h-4 w-4" />
+                            <Label htmlFor="can-view-stats">
+                              Statistiques publiques
+                            </Label>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Tous les utilisateurs peuvent voir les statistiques
+                            de ce lien
+                          </p>
+                        </div>
+                        <Switch
+                          id="can-view-stats"
+                          checked={canViewStats}
+                          onCheckedChange={setCanViewStats}
+                        />
+                      </div>
+                    </div>
+
+                    {(isPublic || canEdit || canViewStats) && (
+                      <div className="pt-4 border-t">
+                        <div className="flex items-start space-x-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                          <Users className="h-4 w-4 text-blue-600 mt-0.5" />
+                          <div className="text-sm">
+                            <p className="font-medium text-blue-900 dark:text-blue-100">
+                              Permissions activées
+                            </p>
+                            <ul className="text-blue-700 dark:text-blue-300 mt-1 space-y-1">
+                              {isPublic && (
+                                <li>• Visible par tous les utilisateurs</li>
+                              )}
+                              {canEdit && (
+                                <li>• Modifiable par tous les utilisateurs</li>
+                              )}
+                              {canViewStats && (
+                                <li>• Statistiques visibles par tous</li>
+                              )}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
 
               {/* Open Graph Section */}
               <Collapsible open={showOpenGraph} onOpenChange={setShowOpenGraph}>

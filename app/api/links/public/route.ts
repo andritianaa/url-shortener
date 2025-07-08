@@ -1,17 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import { requireAdmin } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
-        // Vérifier que l'utilisateur est admin
-        const user = await requireAdmin()
-        if (!user) {
-            return NextResponse.json({ error: "Accès interdit" }, { status: 403 })
-        }
-
+        // Récupérer tous les liens publics (actifs et visibles)
         const links = await prisma.link.findMany({
+            where: {
+                isActive: true, // Seulement les liens actifs
+                // On peut ajouter d'autres critères comme isPublic si on l'ajoute au schéma
+            },
             include: {
                 user: {
                     select: {
@@ -23,7 +21,9 @@ export async function GET(request: NextRequest) {
                     select: { clicks: true },
                 },
             },
-            orderBy: { createdAt: "desc" },
+            orderBy: [
+                { createdAt: "desc" }, // Les plus récents en premier
+            ],
             take: 100, // Limiter pour les performances
         })
 
@@ -32,15 +32,15 @@ export async function GET(request: NextRequest) {
             shortCode: link.shortCode,
             originalUrl: link.originalUrl,
             description: link.description,
-            userName: link.user?.name || link.user?.email || "Utilisateur supprimé",
-            isActive: link.isActive,
+            userName: link.user?.name || link.user?.email || "Utilisateur anonyme",
             clicks: link._count.clicks,
             createdAt: link.createdAt.toISOString(),
+            isActive: link.isActive,
         }))
 
         return NextResponse.json(formattedLinks)
     } catch (error) {
-        console.error("Error fetching admin links:", error)
-        return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })
+        console.error("Error fetching public links:", error)
+        return NextResponse.json({ error: "Erreur lors de la récupération des liens publics" }, { status: 500 })
     }
 }

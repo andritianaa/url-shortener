@@ -1,13 +1,12 @@
 "use client";
 
 import type React from "react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-
-import { DashboardHeader } from '@/components/dashboard-header';
-import { DashboardSidebar } from '@/components/dashboard-sidebar';
-import { useAuth } from '@/hooks/use-auth';
+import { DashboardHeader } from "@/components/dashboard-header";
+import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function DashboardLayout({
   children,
@@ -32,7 +31,7 @@ export default function DashboardLayout({
   }
 
   if (!user) {
-    return null;
+    return null; // Redirection en cours
   }
 
   return (

@@ -1,19 +1,19 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { deleteSession } from "@/lib/auth"
-import { cookies } from "next/headers"
+import { NextRequest, NextResponse } from 'next/server';
+
+import { deleteSession } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get("session")?.value
+    const token = request.cookies.get("session")?.value
 
     if (token) {
       await deleteSession(token)
     }
 
-    cookieStore.delete("session")
+    const response = NextResponse.json({ success: true })
+    response.cookies.delete("session")
 
-    return NextResponse.json({ success: true })
+    return response
   } catch (error) {
     console.error("Sign out error:", error)
     return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })

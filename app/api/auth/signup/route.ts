@@ -1,5 +1,4 @@
 import bcrypt from 'bcryptjs';
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createSession } from '@/lib/auth';
@@ -57,8 +56,8 @@ export async function POST(request: NextRequest) {
 
     const sessionToken = await createSession(user.id)
 
-    const cookieStore = await cookies()
-    cookieStore.set("session", sessionToken, {
+    const response = NextResponse.json(user)
+    response.cookies.set("session", sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -66,7 +65,7 @@ export async function POST(request: NextRequest) {
       path: "/",
     })
 
-    return NextResponse.json(user)
+    return response
   } catch (error) {
     console.error("Sign up error:", error)
     return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })

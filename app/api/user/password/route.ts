@@ -1,16 +1,12 @@
 import bcrypt from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
 
+import { requireAuth } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 
 export async function PATCH(request: NextRequest) {
     try {
-        const userId = request.headers.get("x-user-id")
-
-        if (!userId) {
-            return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-        }
-
+        const user = await requireAuth()
         const { currentPassword, newPassword } = await request.json()
 
         if (!currentPassword || !newPassword) {
@@ -25,16 +21,16 @@ export async function PATCH(request: NextRequest) {
         }
 
         // Récupérer l'utilisateur avec son mot de passe
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
+        const userWithPassword = await prisma.user.findUnique({
+            where: { id: user.id },
         })
 
-        if (!user) {
+        if (!userWithPassword) {
             return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
         }
 
         // Vérifier le mot de passe actuel
-        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password)
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userWithPassword.password)
         if (!isCurrentPasswordValid) {
             return NextResponse.json({ error: "Mot de passe actuel incorrect" }, { status: 400 })
         }
@@ -44,13 +40,16 @@ export async function PATCH(request: NextRequest) {
 
         // Mettre à jour le mot de passe
         await prisma.user.update({
-            where: { id: userId },
+            where: { id: user.id },
             data: { password: hashedNewPassword },
         })
 
         return NextResponse.json({ success: true })
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error updating password:", error)
+        if (error.message === "Non autorisé") {
+            return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+        }
         return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })
     }
 }

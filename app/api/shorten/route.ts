@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import { NextRequest, NextResponse } from 'next/server';
 
+import { requireAuth } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 
 const FILE_SERVER_URL = process.env.FILE_SERVER_URL || "http://localhost:3000"
@@ -8,7 +9,7 @@ const API_KEY = process.env.FILE_SERVER_API_KEY || "votre-api-key-secret"
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id")
+    const user = await requireAuth()
     const formData = await request.formData()
 
     const url = formData.get("url") as string
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
         ogTitle,
         ogDescription,
         ogImage: ogImageUrl,
-        userId: userId || null,
+        userId: user.id,
         ...(fileInfo && {
           file: {
             create: {
@@ -128,8 +129,11 @@ export async function POST(request: NextRequest) {
       clicks: 0,
       createdAt: newLink.createdAt.toISOString(),
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erreur lors de la création du lien:", error)
+    if (error.message === "Non autorisé") {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+    }
     return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })
   }
 }

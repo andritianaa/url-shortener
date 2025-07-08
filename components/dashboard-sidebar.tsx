@@ -1,12 +1,22 @@
 "use client";
 
-import { BarChart3, Home, LinkIcon, List, Plus, Settings, Shield, User } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import {
+  BarChart3,
+  Globe,
+  Home,
+  LinkIcon,
+  List,
+  Plus,
+  Settings,
+  Shield,
+  User,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/use-auth';
-import { cn } from '@/lib/utils';
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
 
 const navigation = [
   {
@@ -23,6 +33,11 @@ const navigation = [
     name: "Mes liens",
     href: "/dashboard/links",
     icon: List,
+  },
+  {
+    name: "Tous les liens",
+    href: "/dashboard/all-links",
+    icon: Globe,
   },
   {
     name: "Statistiques",
@@ -50,7 +65,7 @@ export function DashboardSidebar() {
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/dashboard" className="flex items-center space-x-2">
           <LinkIcon className="h-6 w-6 text-primary" />
-          <span className="font-bold text-xl">URL Pro</span>
+          <span className="font-bold text-xl">Deveridea tool</span>
         </Link>
       </div>
 

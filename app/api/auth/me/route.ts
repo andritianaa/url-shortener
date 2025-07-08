@@ -1,22 +1,16 @@
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getSessionUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth-utils';
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get("session")?.value
+    const user = await getCurrentUser()
 
-    if (!token) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-    }
-
-    const user = await getSessionUser(token)
     if (!user) {
       // Supprimer le cookie invalide
-      cookieStore.delete("session")
-      return NextResponse.json({ error: "Session invalide" }, { status: 401 })
+      const response = NextResponse.json({ error: "Session invalide" }, { status: 401 })
+      response.cookies.delete("session")
+      return response
     }
 
     return NextResponse.json(user)

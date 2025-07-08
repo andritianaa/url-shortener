@@ -1,32 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { requireAuth } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
     try {
-        const userId = request.headers.get("x-user-id")
-
-        if (!userId) {
-            return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-        }
+        const user = await requireAuth()
 
         // Récupérer l'utilisateur avec sa date de création
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
+        const userWithDate = await prisma.user.findUnique({
+            where: { id: user.id },
             select: { createdAt: true },
         })
 
-        if (!user) {
+        if (!userWithDate) {
             return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
         }
 
         // Calculer les statistiques
         const [totalLinks, activeLinks, totalClicks] = await Promise.all([
-            prisma.link.count({ where: { userId } }),
-            prisma.link.count({ where: { userId, isActive: true } }),
+            prisma.link.count({ where: { userId: user.id } }),
+            prisma.link.count({ where: { userId: user.id, isActive: true } }),
             prisma.click.count({
                 where: {
-                    link: { userId },
+                    link: { userId: user.id },
                 },
             }),
         ])
@@ -35,10 +32,13 @@ export async function GET(request: NextRequest) {
             totalLinks,
             activeLinks,
             totalClicks,
-            joinDate: user.createdAt.toISOString(),
+            joinDate: userWithDate.createdAt.toISOString(),
         })
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error fetching user stats:", error)
+        if (error.message === "Non autorisé") {
+            return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+        }
         return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })
     }
 }

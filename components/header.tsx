@@ -1,44 +1,46 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { ModeToggle } from "@/components/mode-toggle"
-import { useAuth } from "@/hooks/use-auth"
-import { UserNav } from "@/components/user-nav"
-import { LinkIcon, BarChart3 } from "lucide-react"
+import { BarChart3, LinkIcon } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import { ModeToggle } from "@/components/mode-toggle";
+import { Button } from "@/components/ui/button";
+import { UserNav } from "@/components/user-nav";
+import { useAuth } from "@/hooks/use-auth";
 
 export function Header() {
-  const { user, loading } = useAuth()
-  const [signupAllowed, setSignupAllowed] = useState(false)
+  const { user, loading } = useAuth();
+  const [signupAllowed, setSignupAllowed] = useState(false);
 
   useEffect(() => {
-    checkSignupStatus()
-  }, [])
+    checkSignupStatus();
+  }, []);
 
   const checkSignupStatus = async () => {
     try {
-      const response = await fetch("/api/auth/check-signup")
-      const data = await response.json()
-      setSignupAllowed(data.signupAllowed)
+      const response = await fetch("/api/auth/check-signup");
+      const data = await response.json();
+      setSignupAllowed(data.signupAllowed);
     } catch (error) {
-      console.error("Error checking signup status:", error)
+      console.error("Error checking signup status:", error);
     }
-  }
+  };
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center space-x-2">
-          <LinkIcon className="h-6 w-6 text-primary" />
-          <span className="font-bold text-xl">URL Pro</span>
-        </Link>
-
         <nav className="hidden md:flex items-center space-x-6">
-          <Link href="/features" className="text-sm font-medium hover:text-primary transition-colors">
+          <Link
+            href="/features"
+            className="text-sm font-medium hover:text-primary transition-colors"
+          >
             Fonctionnalités
           </Link>
-          <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
+          <Link
+            href="/pricing"
+            className="text-sm font-medium hover:text-primary transition-colors"
+          >
             Tarifs
           </Link>
           {user && (
@@ -73,5 +75,5 @@ export function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }

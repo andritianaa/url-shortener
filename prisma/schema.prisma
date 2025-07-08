@@ -59,6 +59,11 @@ model Link {
   ogDescription String?
   ogImage       String?
 
+  // Permission fields
+  isPublic     Boolean @default(false) // Visible par tous
+  canEdit      Boolean @default(false) // Modifiable par tous
+  canViewStats Boolean @default(false)
+
   // Relations
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
   clicks Click[]
