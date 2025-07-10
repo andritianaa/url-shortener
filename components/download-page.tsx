@@ -1,14 +1,21 @@
 "use client";
 
 import {
-    Archive, Clock, Download, File, FileText, HardDrive, ImageIcon, Music, Video
-} from 'lucide-react';
-import { useState } from 'react';
+  Archive,
+  Clock,
+  Download,
+  File,
+  FileText,
+  HardDrive,
+  Image,
+  Music,
+  Video,
+} from "lucide-react";
+import { useState } from "react";
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface DownloadPageProps {
   filename: string;
@@ -22,11 +29,9 @@ export function DownloadPage({
   contentType,
 }: DownloadPageProps) {
   const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [downloadStarted, setDownloadStarted] = useState(false);
 
   const getFileIcon = (contentType: string) => {
-    if (contentType.startsWith("image/")) return ImageIcon;
+    if (contentType.startsWith("image/")) return Image;
     if (contentType.startsWith("video/")) return Video;
     if (contentType.startsWith("audio/")) return Music;
     if (contentType.includes("zip") || contentType.includes("rar"))
@@ -64,50 +69,20 @@ export function DownloadPage({
 
   const handleDownload = async () => {
     setIsDownloading(true);
-    setDownloadStarted(true);
 
     try {
-      // Simuler le téléchargement avec progression
-      const response = await fetch(`https://fs.teratany.org/files/${filename}`);
-
-      if (!response.ok) {
-        throw new Error("Erreur lors du téléchargement");
-      }
-
-      const reader = response.body?.getReader();
-      const contentLength = Number.parseInt(
-        response.headers.get("content-length") || "0"
-      );
-
-      let receivedLength = 0;
-      const chunks = [];
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-
-          if (done) break;
-
-          chunks.push(value);
-          receivedLength += value.length;
-
-          const progress = (receivedLength / contentLength) * 100;
-          setDownloadProgress(progress);
-        }
-      }
-
-      // Créer le blob et déclencher le téléchargement
-      const blob = new Blob(chunks);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download =
+      // Créer directement le lien de téléchargement
+      const originalName =
         filename.split("_").slice(0, -1).join("_") +
         "." +
         filename.split(".").pop();
+
+      const a = document.createElement("a");
+      a.href = `https://fs.teratany.org/files/${filename}`;
+      a.download = originalName;
+      a.target = "_blank";
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
       // Enregistrer les statistiques de téléchargement
@@ -158,16 +133,6 @@ export function DownloadPage({
             </div>
           </div>
 
-          {downloadStarted && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Progression</span>
-                <span>{Math.round(downloadProgress)}%</span>
-              </div>
-              <Progress value={downloadProgress} className="w-full" />
-            </div>
-          )}
-
           <Button
             onClick={handleDownload}
             className="w-full"
@@ -188,8 +153,7 @@ export function DownloadPage({
 
           <div className="text-center">
             <p className="text-xs text-muted-foreground">
-              Le téléchargement commencera automatiquement après avoir cliqué
-              sur le bouton
+              Le téléchargement commencera automatiquement dans votre navigateur
             </p>
           </div>
         </CardContent>
